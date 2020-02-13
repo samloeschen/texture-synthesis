@@ -1,0 +1,24 @@
+﻿#include "Common.hlsl"
+
+RWTexture2D<float4> _ReadTexture;
+RWTexture2D<float4> _WriteTexture;
+
+#pragma kernel ColorDiffuse
+[numthreads(16,16,1)]
+void ColorDiffuse (uint2 id: SV_DispatchThreadID) {
+    float2 texel = _Resolution.zw;
+
+    float4 avg = _ReadTexture[id + int2(-1,  -1)];
+    avg += _ReadTexture[id + int2(-1,  0)];
+    avg += _ReadTexture[id + int2(-1,  1)];
+    avg += _ReadTexture[id + int2( 0,  1)];
+    avg += _ReadTexture[id + int2( 1,  1)];
+    avg += _ReadTexture[id + int2( 1,  0)];
+    avg += _ReadTexture[id + int2( 1, -1)];
+    avg += _ReadTexture[id + int2( 0, -1)];
+
+    avg /= 8.0;
+
+    avg -= 0.004;
+    _WriteTexture[id] = avg;
+}

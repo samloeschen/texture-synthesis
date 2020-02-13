@@ -2,6 +2,7 @@
 #include "CurlNoise.hlsl"
 
 uniform Texture2D Read;
+
 uniform SamplerState samplerRead;
 
 uniform RWTexture2D<float4> Write;

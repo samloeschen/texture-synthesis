@@ -52,6 +52,7 @@
             {
                 float r = tex2D(_MainTex, i.uv).r;
                 float pal = lerp(0.33, 0.7, r);
+                return tex2D(_MainTex, i.uv);
                 return float4(
                     palette(pal, float3(0.5,0.5,0.5),float3(0.5,0.5,0.5),float3(2.0,1.0,0.0),float3(0.5,0.20,0.25)),
                     1.0

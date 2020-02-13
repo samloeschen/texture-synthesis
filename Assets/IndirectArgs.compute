@@ -1,0 +1,9 @@
+﻿#pragma kernel PopulateIndirectArgs
+RWStructuredBuffer<int> _IndirectArgsBuf;
+[numthreads(1,1,1)]
+void PopulateIndirectArgs(uint id: SV_DISPATCHTHREADID) {
+    int threadGroupsX = max(1, (_IndirectArgsBuf[0] / 8) + 1);
+    _IndirectArgsBuf[1] = threadGroupsX;
+    _IndirectArgsBuf[2] = 1;
+    _IndirectArgsBuf[3] = 1;
+}

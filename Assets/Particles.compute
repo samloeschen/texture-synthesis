@@ -1,0 +1,118 @@
+﻿#include "Common.hlsl"
+
+struct Particle {
+    float4 color;
+    float2 position;
+    float heading;
+};
+
+ConsumeStructuredBuffer<Particle> _ReadParticles;
+AppendStructuredBuffer<Particle> _WriteParticles;
+
+StructuredBuffer<int> _CounterBuf;
+uniform int _MaxParticles;
+
+static const float3 a = float3(0.5,0.5,0.5);
+static const float3 b = float3(0.5,0.5,0.5);
+static const float3 c = float3(2.0,1.0,0.0);
+static const float3 d = float3(0.5,0.20,0.25);
+
+#pragma kernel ParticleSeed
+[numthreads(128,1,1)]
+void ParticleSeed (uint id : SV_DispatchThreadID) {
+    int count = _CounterBuf[0];
+    if (count + id >= _MaxParticles) {
+        return;
+    }
+    Particle p;
+
+    float2 offset = float2(
+        rand(_Time + float(id)),
+        rand(_Time + 1.0 + float(id))
+    ) * 0.15;
+    p.position = _Mouse + offset;
+    p.heading = rand(_Time) * PI;
+    p.color = 1.0;//float4(palette(sin(_Time), a, b, c, d), 1.0);
+    _WriteParticles.Append(p);
+}
+
+Texture2D<float4> _ReadTexture;
+SamplerState sampler_ReadTexture;
+RWTexture2D<float4> _WriteTexture;
+
+static const float SENSOR_ANGLE = 0.4;
+static const float TURN_RATE = 0.2;
+static const float SENSOR_DIST = 30.0;
+static const float COLOR_DIST_THRESHOLD = 0.5;
+static const float MOVE_SPEED = 0.001;
+
+// returns 1 if color matches perfectly, 0 if color is equal to or further than dist threshold
+float GetWeightedSample(float2 uv, float3 weightColor) {
+    float3 s = _ReadTexture.SampleLevel(sampler_ReadTexture, uv, 0).rgb;
+
+    return length(s);
+    return 1.0 - saturate(unlerp(COLOR_DIST_THRESHOLD, 0.0, (length(s - weightColor))));
+}
+
+#pragma kernel ParticleSim
+[numthreads(8,1,1)]
+void ParticleSim (uint id: SV_DispatchThreadID) {
+    int count = _CounterBuf[0];
+    if (count - int(id) <= 0) {
+        return;
+    }
+
+    Particle p = _ReadParticles.Consume();
+
+    float2 texel = _Resolution.zw;
+    float2 uv = p.position;
+
+    // sensor directions
+    float newHeading = p.heading;
+    float2 forward = float2(cos(p.heading), sin(p.heading));
+    float2 left    = float2(cos(p.heading + SENSOR_ANGLE), sin(p.heading + SENSOR_ANGLE));
+    float2 right   = float2(cos(p.heading - SENSOR_ANGLE), sin(p.heading - SENSOR_ANGLE));
+
+    // left
+    float leftSample = GetWeightedSample(uv + left * texel * SENSOR_DIST, p.color.rgb);
+
+    // right
+    float rightSample = GetWeightedSample(uv + right * texel * SENSOR_DIST, p.color.rgb);
+
+    // middle sensor
+    float forwardSample = GetWeightedSample(uv + forward * texel * SENSOR_DIST, p.color.rgb);
+
+    if (rightSample > forwardSample && rightSample > leftSample) {
+        newHeading = p.heading - TURN_RATE;
+    }
+    if (leftSample > forwardSample && leftSample > rightSample) {
+        newHeading = p.heading + TURN_RATE;
+    }
+    if (leftSample > 0.8 && rightSample > 0.8) {
+        newHeading = p.heading + lerp(-TURN_RATE, TURN_RATE, step(rand(_Time + float(id)), 0.5));
+    }
+
+    p.heading = newHeading;
+
+
+    // if (forwardSample > 0.5) {
+    //     newHeading = p.heading;
+    // } else if (forwardSample < 0.5 && rightSample > 0.5 && leftSample > 0.5) {
+    //     newHeading += lerp(-TURN_RATE, TURN_RATE, step(rand(_Time + float(id)), 0.5));
+    // } else if (rightSample > leftSample && rightSample > forwardSample) {
+    //     newHeading -= TURN_RATE;
+    // } else if (leftSample > rightSample && leftSample > forwardSample) {
+    //     newHeading += TURN_RATE;
+    // }
+
+    // p.heading = newHeading;
+
+    p.position += float2(cos(p.heading), sin(p.heading)) * MOVE_SPEED;
+
+    float2 dist = abs(p.position - 0.5);
+    if (dist.x < 0.5 || dist.y < 0.5) {
+        _WriteParticles.Append(p);
+        uint2 texPos = uint2(floor(p.position * _Resolution));
+        _WriteTexture[texPos] = p.color;
+    }
+}

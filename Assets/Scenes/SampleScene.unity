@@ -121,6 +121,57 @@ NavMeshSettings:
     debug:
       m_Flags: 0
   m_NavMeshData: {fileID: 0}
+--- !u!1 &333214050
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 333214052}
+  - component: {fileID: 333214051}
+  m_Layer: 0
+  m_Name: ParticleSimulation
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!114 &333214051
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 333214050}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 8aa2ec4c8411d4391a3b913b4f2d1cf9, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  particleShader: {fileID: 7200000, guid: 88f92229dfafb49979e6cb456c737565, type: 3}
+  indirectArgsShader: {fileID: 7200000, guid: af137a61398554cb18e439ae5fd691e1, type: 3}
+  colorDiffuseShader: {fileID: 7200000, guid: a0e9a4fc834fb4bdf83269263b045585, type: 3}
+  particleSeedKernel: 0
+  particleSimKernel: 1
+  textureDims: {x: 3000, y: 3000}
+  renderer: {fileID: 1472906155}
+  maxParticles: 10000000
+--- !u!4 &333214052
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 333214050}
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 1, z: -10}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_Children: []
+  m_Father: {fileID: 0}
+  m_RootOrder: 4
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &705507993
 GameObject:
   m_ObjectHideFlags: 0
@@ -307,12 +358,12 @@ GameObject:
   - component: {fileID: 1171152846}
   - component: {fileID: 1171152845}
   m_Layer: 0
-  m_Name: Simulation
+  m_Name: CurlNoiseSimulation
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 1
+  m_IsActive: 0
 --- !u!114 &1171152845
 MonoBehaviour:
   m_ObjectHideFlags: 0

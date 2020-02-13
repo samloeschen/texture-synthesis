@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.Rendering;
 
-public class Simulation : MonoBehaviour {
+public class CurlNoiseSimulation : MonoBehaviour {
 
     public ComputeShader shader;
     public int seedKernel;
@@ -12,7 +12,7 @@ public class Simulation : MonoBehaviour {
     public Vector2Int textureDims;
     public new Renderer renderer;
 
-    DoubleBuffer _doubleBuffer;
+    DoubleBufferTexture _doubleBuffer;
 
 
     void OnEnable() {
@@ -53,7 +53,7 @@ public class Simulation : MonoBehaviour {
     }
 }
 
-public struct DoubleBuffer {
+public struct DoubleBufferTexture {
     public RenderTexture read;
     public RenderTexture write;
 
@@ -91,7 +91,7 @@ public struct DoubleBuffer {
         desc.msaaSamples = 1;
 
         var tex = new RenderTexture(desc);
-        tex.wrapMode = TextureWrapMode.Repeat;
+        tex.wrapMode = TextureWrapMode.Clamp;
         tex.filterMode = FilterMode.Bilinear;
         tex.Create();
         return tex;
