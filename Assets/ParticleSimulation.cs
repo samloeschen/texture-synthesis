@@ -86,18 +86,7 @@ public class ParticleSimulation : MonoBehaviour {
         pBufA = pBufB;
         pBufB = tmp;
 
-
-
-        // flip particle buffers
-        // FlipParticleBuffers();
-        // var tmp = particlesWrite;
-        // particlesWrite = particlesRead;
-        // ComputeBuffer.CopyCount(particlesWrite, indirectArgsBuf, 0);
-
-        // return;
-
         _doubleBuffer.Flip();
-        // color diffuse
         {
             colorDiffuseShader.SetTexture(0, "_ReadTexture", _doubleBuffer.read);
             colorDiffuseShader.SetTexture(0, "_WriteTexture", _doubleBuffer.write);

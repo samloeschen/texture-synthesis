@@ -81,7 +81,7 @@ public struct DoubleBufferTexture {
 
     RenderTexture MakeTexture(int width, int height) {
         var desc = new RenderTextureDescriptor();
-        desc.colorFormat = RenderTextureFormat.BGRA32;
+        desc.colorFormat = RenderTextureFormat.ARGB32;
         desc.depthBufferBits = 0;
         desc.dimension = TextureDimension.Tex2D;
         desc.enableRandomWrite = true;

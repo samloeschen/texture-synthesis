@@ -1,5 +1,7 @@
 ﻿#include "Common.hlsl"
 
+uniform float _DecayRate;
+
 RWTexture2D<float4> _ReadTexture;
 RWTexture2D<float4> _WriteTexture;
 
@@ -18,7 +20,8 @@ void ColorDiffuse (uint2 id: SV_DispatchThreadID) {
     avg += _ReadTexture[id + int2( 0, -1)];
 
     avg /= 8.0;
-
-    avg -= 0.004;
+    avg.x -= _DecayRate;
+    avg.y -= _DecayRate * 3.0;
+    avg = saturate(avg);
     _WriteTexture[id] = avg;
 }

@@ -1,0 +1,103 @@
+﻿#include "Common.hlsl"
+
+uniform float _NormalSensorAngle;
+uniform float _InfectedSensorAngle;
+uniform float _NormalTurnRate;
+uniform float _InfectedTurnRate;
+uniform float _NormalSensorDist;
+uniform float _InfectedSensorDist;
+uniform float _NormalMoveSpeed;
+uniform float _InfectedMoveSpeed;
+
+uniform int _MaxParticles;
+
+struct Particle {
+    float2 position;
+    float heading;
+    float contagion;
+};
+
+ConsumeStructuredBuffer<Particle> _ReadParticles;
+AppendStructuredBuffer<Particle> _WriteParticles;
+StructuredBuffer<int> _CounterBuf;
+
+#pragma kernel ContagionSeed
+[numthreads(256,1,1)]
+void ContagionSeed (uint id : SV_DispatchThreadID) {
+    uint count = _CounterBuf[0];
+    if (count + id >= _MaxParticles) {
+        return;
+    }
+    Particle p;
+    float2 offset = float2(
+        rand(_Time + float(id)),
+        rand(_Time + 1.0 + float(id))
+    ) * 0.15;
+    p.position = _Mouse + offset;
+    p.heading = rand(_Time) * PI;
+    p.contagion = step(rand(_Time + float(id)), 0.00001);
+    // p.contagion = 0.0;
+    _WriteParticles.Append(p);
+}
+
+Texture2D<float4> _ReadTexture;
+SamplerState sampler_ReadTexture;
+RWTexture2D<float4> _WriteTexture;
+
+float SampleField(float2 uv) {
+    return _ReadTexture.SampleLevel(sampler_ReadTexture, uv, 0).r;
+}
+
+float SampleContagion(float2 uv) {
+    return _ReadTexture.SampleLevel(sampler_ReadTexture, uv, 0).y;
+}
+
+#pragma kernel ContagionSim
+[numthreads(8,1,1)]
+void ContagionSim (uint id: SV_DispatchThreadID) {
+    int count = _CounterBuf[0];
+    if (count - int(id) <= 0) {
+        return;
+    }
+    Particle p = _ReadParticles.Consume();
+
+    float sensorAngle   = lerp(_NormalSensorAngle, _InfectedSensorAngle, p.contagion);
+    float turnRate      = lerp(_NormalTurnRate, _InfectedTurnRate, p.contagion);
+    float sensorDist    = lerp(_NormalSensorDist, _InfectedSensorDist, p.contagion);
+    float moveSpeed     = lerp(_NormalMoveSpeed, _InfectedMoveSpeed, p.contagion);
+
+    float2 texel = _Resolution.zw;
+    float2 uv = p.position;
+
+    // sensor directions
+    float newHeading = p.heading;
+    float2 forward = float2(cos(p.heading), sin(p.heading));
+    float2 left    = float2(cos(p.heading + sensorAngle), sin(p.heading + sensorAngle));
+    float2 right   = float2(cos(p.heading - sensorAngle), sin(p.heading - sensorAngle));
+
+    float leftSample = SampleField(uv + left * texel * sensorDist);
+    float rightSample = SampleField(uv + right * texel * sensorDist);
+    float forwardSample = SampleField(uv + forward * texel * sensorDist);
+
+    if (rightSample > forwardSample && rightSample > leftSample) {
+        newHeading = p.heading - turnRate;
+    }
+    if (leftSample > forwardSample && leftSample > rightSample) {
+        newHeading = p.heading + turnRate;
+    }
+    if (leftSample > 0.8 && rightSample > 0.8) {
+        newHeading = p.heading + lerp(-turnRate, turnRate, rand(_Time + float(id) > 0.5));
+    }
+
+    p.contagion -= 0.01;
+    p.contagion += SampleContagion(uv);
+    p.contagion = saturate(p.contagion);
+
+    uint2 texPos = uint2(floor(p.position * _Resolution));
+    _WriteTexture[texPos] = float4(1.0, p.contagion, 0.0, 0.0);
+
+    p.heading = newHeading;
+    p.position += float2(cos(p.heading), sin(p.heading)) * moveSpeed;
+    p.position = frac(p.position);
+    _WriteParticles.Append(p);
+}
